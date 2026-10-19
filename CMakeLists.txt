@@ -83,6 +83,7 @@ target_compile_features(gdkaudio_openal PUBLIC cxx_std_20)
 
 target_link_libraries(gdkaudio_openal PUBLIC
     gdkaudio
+    jfc-smart_handles
     OpenAL)
 
 if (JFC_BUILD_DEMO)
