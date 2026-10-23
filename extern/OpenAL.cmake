@@ -23,7 +23,6 @@ if (TARGET OpenAL::OpenAL)
     add_library(OpenAL INTERFACE)
 
     target_link_libraries(OpenAL INTERFACE OpenAL::OpenAL)
-    target_compile_options(OpenAL PRIVATE -Wno-error=range-loop-construct)
 
     return()
 endif()
@@ -37,6 +36,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
 endif()
 
 add_subdirectory(OpenAL)
+target_compile_options(OpenAL PRIVATE -Wno-error=range-loop-construct)
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set_target_properties(OpenAL PROPERTIES PREFIX "lib")
