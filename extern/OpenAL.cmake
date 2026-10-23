@@ -41,8 +41,12 @@ if (NOT MSVC)
     target_compile_options(OpenAL PRIVATE 
         -Wno-error=range-loop-construct
         -Wno-error=uninitialized
-        -Wno-error=maybe-uninitialized
     )
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        if (NOT (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12))
+            target_compile_options(OpenAL PRIVATE -Wno-error=maybe-uninitialized)
+        endif()
+    endif()
 endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
