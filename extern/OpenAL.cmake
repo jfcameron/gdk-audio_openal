@@ -41,6 +41,7 @@ if (NOT MSVC)
     target_compile_options(OpenAL PRIVATE 
         -Wno-error=range-loop-construct
         -Wno-error=uninitialized
+        -Wno-error=maybe-uninitialized
     )
 endif()
 
