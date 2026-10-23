@@ -42,10 +42,8 @@ if (NOT MSVC)
         -Wno-error=range-loop-construct
         -Wno-error=uninitialized
     )
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12)
-            target_compile_options(OpenAL PRIVATE -Wno-error=maybe-uninitialized)
-        endif()
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        target_compile_options(OpenAL PRIVATE -Wno-error=maybe-uninitialized)
     endif()
 endif()
 
