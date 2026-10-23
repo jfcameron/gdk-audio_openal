@@ -23,6 +23,7 @@ if (TARGET OpenAL::OpenAL)
     add_library(OpenAL INTERFACE)
 
     target_link_libraries(OpenAL INTERFACE OpenAL::OpenAL)
+    target_compile_options(OpenAL PRIVATE -Wno-error=range-loop-construct)
 
     return()
 endif()
