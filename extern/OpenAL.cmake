@@ -36,7 +36,10 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
 endif()
 
 add_subdirectory(OpenAL)
-target_compile_options(OpenAL PRIVATE -Wno-error=range-loop-construct)
+
+if (NOT MSVC)
+    target_compile_options(OpenAL PRIVATE -Wno-error=range-loop-construct)
+endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set_target_properties(OpenAL PROPERTIES PREFIX "lib")
