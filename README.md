@@ -2,23 +2,17 @@
 
 An implementation of [gdk-audio](https://github.com/jfcameron/gdk-audio) using OpenAL.
 
-## OpenAL
+### Quickstart
 
-`extern/OpenAL.cmake` picks one, unless the host has already defined an `OpenAL` target:
-
-- **emscripten's**, over Web Audio, in the browser;
-- **the system's**, through `find_package(OpenAL CONFIG)`;
-- **openal-soft**, built from `extern/OpenAL` and linked statically, where the system has none or
-  `GDK_AUDIO_VENDORED_OPENAL` asks for it.
-
-## Building
-
+Install cmake version 3.21 or greater, and a c++20 compatible compiler 
 ```
-cmake --preset linux-clang
-cmake --build --preset linux-clang
-ctest --preset linux-clang
+# initialize the tree
+git submodule update --init --recursive
+
+# generate the script to build the demo programs on linux using gcc
+cmake --preset linux-gcc-demo
+
+# build the library and demo programs
+cmake --build --preset linux-gcc-demo
 ```
-
-`CMakePresets.json` lists the supported builds. `linux-gcc-demo` builds the demos, and `emscripten` builds the library
-for the browser (`emcmake cmake --preset emscripten`).
-
+The above is just a demonstration, see `CMakePresets.json` for the full list of supported platforms and compilers. `linux-gcc-demo` builds the demos. The scripts in that file are the same ones used by the CI configurations (`.github/workflows/ci.yml`). They cover Linux, Windows x86 64bit and 32bit, Mac, Android, iOS and emscripten.
