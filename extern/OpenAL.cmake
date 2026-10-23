@@ -38,7 +38,11 @@ endif()
 add_subdirectory(OpenAL)
 
 if (NOT MSVC)
-    target_compile_options(OpenAL PRIVATE -Wno-error=range-loop-construct)
+    target_compile_options(OpenAL PRIVATE 
+        -Wno-error=range-loop-construct
+        -Wno-error=maybe-uninitialized
+        -Wno-error=uninitialized
+    )
 endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
