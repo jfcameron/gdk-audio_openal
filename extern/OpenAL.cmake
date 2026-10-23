@@ -5,9 +5,7 @@ option(GDK_AUDIO_VENDORED_OPENAL
 
 if (EMSCRIPTEN)
     message(STATUS "gdk-audio_openal: emscripten's OpenAL, over Web Audio")
-
     add_library(OpenAL INTERFACE)
-
     target_link_libraries(OpenAL INTERFACE openal)
 
     return()
@@ -19,9 +17,7 @@ endif()
 
 if (TARGET OpenAL::OpenAL)
     message(STATUS "gdk-audio_openal: OpenAL from the system (${OpenAL_DIR}); GDK_AUDIO_VENDORED_OPENAL builds the vendored one")
-
     add_library(OpenAL INTERFACE)
-
     target_link_libraries(OpenAL INTERFACE OpenAL::OpenAL)
 
     return()

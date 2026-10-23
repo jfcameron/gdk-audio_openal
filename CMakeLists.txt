@@ -6,7 +6,8 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/jfc-cmake/jfclib.cmake")
 
 project(gdkaudio_openal
     VERSION 0.0
-    DESCRIPTION "game development kit audio, implemented over OpenAL")
+    DESCRIPTION "game development kit audio, implemented over OpenAL"
+)
 
 option(JFC_BUILD_DEMO "Build the demos" ON)
 option(JFC_BUILD_DOCS "Build documentation" OFF)
@@ -77,7 +78,7 @@ target_include_directories(gdkaudio_openal
     PRIVATE
         "${PROJECT_BINARY_DIR}/generated_include/"
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include
-    )
+)
 
 target_compile_features(gdkaudio_openal PUBLIC cxx_std_20)
 
@@ -97,3 +98,4 @@ endif()
 if (JFC_BUILD_DOCS)
     add_subdirectory(docs)
 endif()
+
