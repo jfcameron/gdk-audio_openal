@@ -1,7 +1,7 @@
 # gdk-audio_openal
 An implementation of [gdk-audio](https://github.com/jfcameron/gdk-audio) using OpenAL.
 
-## Quickstart
+## Getting Started
 Install cmake version 3.21 or greater, and a c++20 compatible compiler 
 ```
 # initialize the tree
