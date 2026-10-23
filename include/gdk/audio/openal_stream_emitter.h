@@ -20,11 +20,9 @@
 #include <unordered_map>
 #include <vector>
 
-namespace gdk::audio
-{
+namespace gdk::audio {
 	/// \brief a stream emitter decodes its sound as it plays
-    class openal_stream_emitter : public openal_emitter
-    {
+    class openal_stream_emitter : public openal_emitter {
 		openal_policy m_Policy;
 
 		insert_effect_collection_type m_Inserts;

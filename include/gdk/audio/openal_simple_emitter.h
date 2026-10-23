@@ -15,11 +15,9 @@
 #include <memory>
 #include <optional>
 
-namespace gdk::audio
-{
+namespace gdk::audio {
 	/// \brief emitter that decodes its sound once rather than streaming it
-    class openal_simple_emitter : public openal_emitter
-    {
+    class openal_simple_emitter : public openal_emitter {
 		jfc::shared_handle<ALuint> m_ALBufferHandle;
 
 		ALsizei m_SampleRate;

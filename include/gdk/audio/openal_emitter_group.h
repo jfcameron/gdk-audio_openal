@@ -12,11 +12,9 @@
 #include <memory>
 #include <vector>
 
-namespace gdk::audio
-{
+namespace gdk::audio {
     /// \brief openal implementation of emitter_group: one alSourcePlayv over every member's sources
-    class openal_emitter_group final : public emitter_group
-    {
+    class openal_emitter_group final : public emitter_group {
         std::vector<std::weak_ptr<openal_emitter>> m_Members;
 
         [[nodiscard]] std::vector<std::shared_ptr<openal_emitter>> members() const;

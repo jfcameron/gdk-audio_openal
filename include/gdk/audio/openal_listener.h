@@ -6,11 +6,9 @@
 #include <gdk/audio/types.h>
 #include <gdk/audio/listener.h>
 
-namespace gdk::audio
-{
+namespace gdk::audio {
     /// \brief openal implementation of listener
-    class openal_listener final : public listener
-    {
+    class openal_listener final : public listener {
         audio_vector3_type m_Position = audio_vector3_type::zero;
         audio_quaternion_type m_Rotation = audio_quaternion_type::identity;
         audio_vector3_type m_Velocity = audio_vector3_type::zero;

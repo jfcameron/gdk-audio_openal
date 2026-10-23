@@ -14,11 +14,9 @@
 #include <memory>
 #include <vector>
 
-namespace gdk::audio
-{
+namespace gdk::audio {
     /// \brief openal implementation of context
-    class openal_context final : public context
-    {
+    class openal_context final : public context {
     public:
         using device_pointer_type = std::unique_ptr<ALCdevice, std::function<void(ALCdevice *const)>>;
         using openal_context_pointer_type = std::unique_ptr<ALCcontext, std::function<void(ALCcontext *const)>>;

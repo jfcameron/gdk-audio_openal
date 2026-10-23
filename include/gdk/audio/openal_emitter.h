@@ -18,8 +18,7 @@
 #include <utility>
 #include <vector>
 
-namespace gdk::audio
-{
+namespace gdk::audio {
     /// \brief the AL buffer format for a channel count and sample layout
     /// \warning throws if OpenAL has no format for that combination: more than two channels need
     /// AL_EXT_MCFORMATS, and float samples AL_EXT_float32, which the context's OpenAL may lack

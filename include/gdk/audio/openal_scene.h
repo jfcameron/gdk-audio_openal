@@ -17,11 +17,9 @@
 #include <span>
 #include <vector>
 
-namespace gdk::audio
-{
+namespace gdk::audio {
     /// \brief openal implementation of scene
-    class openal_scene final : public scene
-    {
+    class openal_scene final : public scene {
     public:
         using emitter_collection_type = std::vector<std::weak_ptr<openal_emitter>>;
 
