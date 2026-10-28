@@ -1,13 +1,14 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <jfc/catch.hpp>
 
+#include <gdk/audio/impl_al_emitter.h>
 #include <gdk/audio/emitter.h>
 #include <gdk/audio/openal_context.h>
 #include <gdk/audio/openal_emitter.h>
 #include <gdk/audio/openal_policy.h>
-#include <gdk/audio/openal_simple_emitter.h>
-#include <gdk/audio/openal_stream_emitter.h>
+#include <gdk/audio/impl_openal_simple_emitter.h>
+#include <gdk/audio/impl_openal_stream_emitter.h>
 #include <gdk/audio/scene.h>
 #include <gdk/audio/sound.h>
 
@@ -29,7 +30,7 @@ namespace {
 
     [[nodiscard]] ALint al_looping_of(const emitter_shared_ptr_type &aEmitter) {
         ALint value = -1;
-        alGetSourcei(std::dynamic_pointer_cast<openal_emitter>(aEmitter)->source_handle(),
+        alGetSourcei(std::dynamic_pointer_cast<al_emitter>(aEmitter)->source_handle(),
             AL_LOOPING, &value);
 
         return value;
@@ -64,9 +65,9 @@ TEST_CASE("only the decoded emitter uses AL_LOOPING", "[loop]") {
 
 TEST_CASE("a streaming emitter loops by rewinding its cursor", "[loop]") {
     auto pContext = openal_context::make(
-        openal_policy{.DISTANCE_MODEL = distance_model::linear_clamped,
-            .DOPPLER_FACTOR = 1, .SPEED_OF_SOUND = 343.3f,
-            .STREAMING_THRESHOLD_IN_SECONDS = 0.0f});
+        openal_policy{.distance_model = distance_model::linear_clamped,
+            .doppler_factor = 1, .speed_of_sound = 343.3f,
+            .streaming_threshold_in_seconds = 0.0f});
 
     auto pScene = pContext->make_scene();
 

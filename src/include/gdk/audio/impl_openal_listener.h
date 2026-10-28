@@ -1,7 +1,7 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
-#ifndef GDK_AUDIO_OPENAL_LISTENER_H
-#define GDK_AUDIO_OPENAL_LISTENER_H
+#ifndef GDK_AUDIO_IMPL_OPENAL_LISTENER_H
+#define GDK_AUDIO_IMPL_OPENAL_LISTENER_H
 
 #include <gdk/audio/types.h>
 #include <gdk/audio/listener.h>

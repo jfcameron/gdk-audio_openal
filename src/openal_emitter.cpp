@@ -1,10 +1,10 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <gdk/audio/exception.h>
 #include <gdk/audio/impl_efx.h>
-#include <gdk/audio/openal_emitter.h>
+#include <gdk/audio/impl_al_emitter.h>
 
-#include <gdk/math_constants.h>
+#include <gdk/math/constants.h>
 
 #include <string>
 
@@ -66,8 +66,9 @@ namespace gdk::audio
             + std::to_string(aChannelCount) + " channels");
     }
 
-    openal_emitter::openal_emitter(std::vector<vector_type> aChannelOffsets)
-    : m_ChannelOffsets(aChannelOffsets.empty() ? std::vector<vector_type>{vector_type::zero} : std::move(aChannelOffsets))
+    al_emitter::al_emitter(openal_session_ptr_type apSession, std::vector<vector_type> aChannelOffsets)
+    : m_pSession(std::move(apSession))
+    , m_ChannelOffsets(aChannelOffsets.empty() ? std::vector<vector_type>{vector_type::zero} : std::move(aChannelOffsets))
     {
         m_alSourceHandles.reserve(m_ChannelOffsets.size());
 
@@ -87,7 +88,7 @@ namespace gdk::audio
         });
     }
 
-    bool openal_emitter::is_playing() const
+    bool al_emitter::is_playing() const
     {
         for (const auto &handle : m_alSourceHandles)
         {
@@ -100,7 +101,7 @@ namespace gdk::audio
         return false;
     }
 
-    void openal_emitter::pause()
+    void al_emitter::pause()
     {
         if (m_state != state::playing) return;
 
@@ -111,7 +112,7 @@ namespace gdk::audio
         m_state = state::paused;
     }
 
-    void openal_emitter::resume()
+    void al_emitter::resume()
     {
         if (m_state != state::paused) return;
 
@@ -120,33 +121,33 @@ namespace gdk::audio
         m_state = state::playing;
     }
 
-    bool openal_emitter::is_paused() const
+    bool al_emitter::is_paused() const
     {
         return m_state == state::paused;
     }
 
-    void openal_emitter::play_sources()
+    void al_emitter::play_sources()
     {
         const auto handles = source_handles();
 
         alSourcePlayv(static_cast<ALsizei>(handles.size()), handles.data());
     }
 
-    void openal_emitter::pause_sources()
+    void al_emitter::pause_sources()
     {
         const auto handles = source_handles();
 
         alSourcePausev(static_cast<ALsizei>(handles.size()), handles.data());
     }
 
-    void openal_emitter::stop_sources()
+    void al_emitter::stop_sources()
     {
         const auto handles = source_handles();
 
         alSourceStopv(static_cast<ALsizei>(handles.size()), handles.data());
     }
 
-    std::pair<double, double> openal_emitter::source_offset_and_latency() const
+    std::pair<double, double> al_emitter::source_offset_and_latency() const
     {
         if (const auto getSourcedv = get_sourcedv_soft())
         {
@@ -163,22 +164,22 @@ namespace gdk::audio
         return {offset, 0};
     }
 
-    bool openal_emitter::is_grouped() const
+    bool al_emitter::is_grouped() const
     {
         return m_Grouped;
     }
 
-    void openal_emitter::set_grouped(const bool aGrouped)
+    void al_emitter::set_grouped(const bool aGrouped)
     {
         m_Grouped = aGrouped;
     }
 
-    bool openal_emitter::wants_to_play() const
+    bool al_emitter::wants_to_play() const
     {
         return m_state != state::stopped;
     }
 
-    void openal_emitter::note_paused()
+    void al_emitter::note_paused()
     {
         if (m_state != state::playing) return;
 
@@ -187,27 +188,27 @@ namespace gdk::audio
         m_state = state::paused;
     }
 
-    void openal_emitter::note_resumed()
+    void al_emitter::note_resumed()
     {
         if (m_state == state::paused) m_state = state::playing;
     }
 
-    void openal_emitter::set_looping(const bool aLooping)
+    void al_emitter::set_looping(const bool aLooping)
     {
         m_Looping = aLooping;
     }
 
-    bool openal_emitter::is_looping() const
+    bool al_emitter::is_looping() const
     {
         return m_Looping;
     }
 
-    ALuint openal_emitter::source_handle() const
+    ALuint al_emitter::source_handle() const
     {
         return m_alSourceHandles.front().get();
     }
 
-    std::vector<ALuint> openal_emitter::source_handles() const
+    std::vector<ALuint> al_emitter::source_handles() const
     {
         std::vector<ALuint> handles;
 
@@ -218,12 +219,12 @@ namespace gdk::audio
         return handles;
     }
 
-	void openal_emitter::set_pitch(const audio_floating_point_type aPitch)
+	void al_emitter::set_pitch(const audio_floating_point_type aPitch)
 	{
 		for (const auto &handle : m_alSourceHandles) alSourcef(handle.get(), AL_PITCH, aPitch);
 	}
 
-	audio_floating_point_type openal_emitter::pitch() const
+	audio_floating_point_type al_emitter::pitch() const
 	{
 		ALfloat value = 1;
 		alGetSourcef(source_handle(), AL_PITCH, &value);
@@ -231,38 +232,38 @@ namespace gdk::audio
 		return value;
 	}
 
-	void openal_emitter::set_gain(const audio_floating_point_type aGain)
+	void al_emitter::set_gain(const audio_floating_point_type aGain)
 	{
 		m_Gain = aGain;
 	}
 
-	audio_floating_point_type openal_emitter::gain() const
+	audio_floating_point_type al_emitter::gain() const
 	{
 		return m_Gain;
 	}
 
-	void openal_emitter::set_direction(const vector_type &aDirection)
+	void al_emitter::set_direction(const vector_type &aDirection)
 	{
 		m_Direction = aDirection;
 	}
 
-	openal_emitter::vector_type openal_emitter::direction() const
+	al_emitter::vector_type al_emitter::direction() const
 	{
 		return m_Direction;
 	}
 
-	void openal_emitter::set_cone(const audio_floating_point_type aInnerAngle,
+	void al_emitter::set_cone(const audio_floating_point_type aInnerAngle,
 		const audio_floating_point_type aOuterAngle, const audio_floating_point_type aOuterGain)
 	{
 		for (const auto &handle : m_alSourceHandles)
 		{
-			alSourcef(handle.get(), AL_CONE_INNER_ANGLE, to_degrees(aInnerAngle));
-			alSourcef(handle.get(), AL_CONE_OUTER_ANGLE, to_degrees(aOuterAngle));
+			alSourcef(handle.get(), AL_CONE_INNER_ANGLE, gdk::math::to_degrees(aInnerAngle));
+			alSourcef(handle.get(), AL_CONE_OUTER_ANGLE, gdk::math::to_degrees(aOuterAngle));
 			alSourcef(handle.get(), AL_CONE_OUTER_GAIN, aOuterGain);
 		}
 	}
 
-	void openal_emitter::set_attenuation(const audio_floating_point_type aReferenceDistance,
+	void al_emitter::set_attenuation(const audio_floating_point_type aReferenceDistance,
 		const audio_floating_point_type aMaxDistance, const audio_floating_point_type aRolloffFactor)
 	{
 		for (const auto &handle : m_alSourceHandles)
@@ -273,27 +274,27 @@ namespace gdk::audio
 		}
 	}
 
-	void openal_emitter::set_position(const vector_type &aPosition)
+	void al_emitter::set_position(const vector_type &aPosition)
 	{
 		m_Position = aPosition;
 	}
 
-	openal_emitter::vector_type openal_emitter::position() const
+	al_emitter::vector_type al_emitter::position() const
 	{
 		return m_Position;
 	}
 
-	void openal_emitter::set_velocity(const vector_type &aVelocity)
+	void al_emitter::set_velocity(const vector_type &aVelocity)
 	{
 		m_Velocity = aVelocity;
 	}
 
-	openal_emitter::vector_type openal_emitter::velocity() const
+	al_emitter::vector_type al_emitter::velocity() const
 	{
 		return m_Velocity;
 	}
 
-	void openal_emitter::set_lowpass(const lowpass_parameters &aParameters)
+	void al_emitter::set_lowpass(const lowpass_parameters &aParameters)
 	{
 		const auto *const pEfx = efx();
 
@@ -320,7 +321,7 @@ namespace gdk::audio
 			alSourcei(handle.get(), EFX_DIRECT_FILTER, static_cast<ALint>(filter));
 	}
 
-	void openal_emitter::clear_lowpass()
+	void al_emitter::clear_lowpass()
 	{
 		if (!m_LowpassFilter) return;
 
@@ -330,12 +331,12 @@ namespace gdk::audio
 		m_LowpassFilter.reset();
 	}
 
-	ALuint openal_emitter::lowpass_filter_handle() const
+	ALuint al_emitter::lowpass_filter_handle() const
 	{
 		return m_LowpassFilter.get();   
 	}
 
-	void openal_emitter::route_to_send(const ALuint aEffectSlot)
+	void al_emitter::route_to_send(const ALuint aEffectSlot)
 	{
 		if (!efx()) return;
 
@@ -346,12 +347,12 @@ namespace gdk::audio
 		m_SendSlot = aEffectSlot;
 	}
 
-	ALuint openal_emitter::send_slot() const
+	ALuint al_emitter::send_slot() const
 	{
 		return m_SendSlot;
 	}
 
-	void openal_emitter::apply_listener(const listener &aListener)
+	void al_emitter::apply_listener(const listener &aListener)
 	{
 		const auto intoListenerSpace = aListener.rotation().inverse();
 
@@ -373,6 +374,6 @@ namespace gdk::audio
 		}
 	}
 
-	void openal_emitter::update()
+	void al_emitter::update()
 	{}
 }

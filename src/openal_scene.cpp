@@ -1,10 +1,10 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <gdk/audio/exception.h>
 #include <gdk/audio/impl_efx.h>
-#include <gdk/audio/openal_scene.h>
-#include <gdk/audio/openal_simple_emitter.h>
-#include <gdk/audio/openal_stream_emitter.h>
+#include <gdk/audio/impl_al_scene.h>
+#include <gdk/audio/impl_openal_simple_emitter.h>
+#include <gdk/audio/impl_openal_stream_emitter.h>
 
 #include <algorithm>
 #include <functional>
@@ -44,37 +44,33 @@ namespace gdk::audio
         }
     }
 
-    scene_shared_ptr_type openal_scene::make(openal_policy aPolicy)
-    {
-        return scene_shared_ptr_type(new openal_scene(std::move(aPolicy)));
-    }
-
-    openal_scene::openal_scene(openal_policy aPolicy)
-    : m_Policy(std::move(aPolicy))
+    al_scene::al_scene(openal_session_ptr_type apSession, openal_policy aPolicy)
+    : m_pSession(std::move(apSession))
+    , m_Policy(std::move(aPolicy))
     {}
 
-    listener &openal_scene::get_listener()
+    listener &al_scene::get_listener()
     {
         return m_Listener;
     }
 
-    const listener &openal_scene::get_listener() const
+    const listener &al_scene::get_listener() const
     {
         return m_Listener;
     }
 
-    emitter_shared_ptr_type openal_scene::make_emitter(sound_shared_ptr_type apSound)
+    emitter_shared_ptr_type al_scene::make_emitter(sound_shared_ptr_type apSound)
     {
         return add_emitter(std::move(apSound), {}, {});
     }
 
-    emitter_shared_ptr_type openal_scene::make_emitter(sound_shared_ptr_type apSound,
+    emitter_shared_ptr_type al_scene::make_emitter(sound_shared_ptr_type apSound,
         insert_effect_collection_type aInserts)
     {
         return add_emitter(std::move(apSound), std::move(aInserts), {});
     }
 
-    emitter_shared_ptr_type openal_scene::make_emitter(sound_shared_ptr_type apSound,
+    emitter_shared_ptr_type al_scene::make_emitter(sound_shared_ptr_type apSound,
         std::span<const audio_vector3_type> aChannelPositions)
     {
         if (aChannelPositions.empty()) throw exception("an emitter placing a sound's channels needs a place for each");
@@ -83,7 +79,7 @@ namespace gdk::audio
             std::vector<audio_vector3_type>(aChannelPositions.begin(), aChannelPositions.end()));
     }
 
-    emitter_shared_ptr_type openal_scene::add_emitter(sound_shared_ptr_type apSound,
+    emitter_shared_ptr_type al_scene::add_emitter(sound_shared_ptr_type apSound,
         insert_effect_collection_type aInserts, std::vector<audio_vector3_type> aChannelOffsets)
     {
         if (!apSound) throw exception("tried to make an emitter from a null sound");
@@ -92,12 +88,12 @@ namespace gdk::audio
             if (!pInsert) throw exception("an insert effect in the chain was null");
 
         const bool decodeUpFront = aInserts.empty() && aChannelOffsets.empty()
-            && apSound->duration() < m_Policy.STREAMING_THRESHOLD_IN_SECONDS;
+            && apSound->duration() < m_Policy.streaming_threshold_in_seconds;
 
-        std::shared_ptr<openal_emitter> pEmitter = decodeUpFront
-            ? std::shared_ptr<openal_emitter>(new openal_simple_emitter(apSound, m_Policy))
-            : std::shared_ptr<openal_emitter>(
-                new openal_stream_emitter(apSound, m_Policy, std::move(aInserts), std::move(aChannelOffsets)));
+        std::shared_ptr<al_emitter> pEmitter = decodeUpFront
+            ? std::shared_ptr<al_emitter>(new openal_simple_emitter(m_pSession, apSound, m_Policy))
+            : std::shared_ptr<al_emitter>(new openal_stream_emitter(m_pSession, apSound, m_Policy,
+                std::move(aInserts), std::move(aChannelOffsets)));
 
         pEmitter->apply_listener(m_Listener);
 
@@ -108,15 +104,15 @@ namespace gdk::audio
         return pEmitter;
     }
 
-    emitter_group_shared_ptr_type openal_scene::make_emitter_group(std::span<const emitter_shared_ptr_type> aEmitters)
+    emitter_group_shared_ptr_type al_scene::make_emitter_group(std::span<const emitter_shared_ptr_type> aEmitters)
     {
-        std::vector<std::shared_ptr<openal_emitter>> members;
+        std::vector<std::shared_ptr<al_emitter>> members;
 
         members.reserve(aEmitters.size());
 
         for (const auto &pEmitter : aEmitters)
         {
-            auto pMember = std::dynamic_pointer_cast<openal_emitter>(pEmitter);
+            auto pMember = std::dynamic_pointer_cast<al_emitter>(pEmitter);
 
             const bool ours = pMember && std::any_of(m_Emitters.begin(), m_Emitters.end(),
                 [&pMember](const auto &aHeld) { return aHeld.lock() == pMember; });
@@ -133,7 +129,7 @@ namespace gdk::audio
         return pGroup;
     }
 
-    void openal_scene::remove(const emitter_shared_ptr_type &aEmitter)
+    void al_scene::remove(const emitter_shared_ptr_type &aEmitter)
     {
         const auto found = std::find_if(m_Emitters.begin(), m_Emitters.end(),
             [&aEmitter](const auto &aHeld) { return aHeld.lock() == aEmitter; });
@@ -145,13 +141,13 @@ namespace gdk::audio
         m_Emitters.erase(found);
     }
 
-    std::size_t openal_scene::emitter_count() const
+    std::size_t al_scene::emitter_count() const
     {
         return static_cast<std::size_t>(std::count_if(m_Emitters.begin(), m_Emitters.end(),
             [](const auto &aHeld) { return !aHeld.expired(); }));
     }
 
-    void openal_scene::set_reverb(const reverb_parameters &a)
+    void al_scene::set_reverb(const reverb_parameters &a)
     {
         const auto &efx = efx_or_throw();
 
@@ -172,7 +168,7 @@ namespace gdk::audio
         bind_effect_to_slot();
     }
 
-    void openal_scene::set_echo(const echo_parameters &a)
+    void al_scene::set_echo(const echo_parameters &a)
     {
         const auto &efx = efx_or_throw();
 
@@ -187,7 +183,7 @@ namespace gdk::audio
         bind_effect_to_slot();
     }
 
-    void openal_scene::clear_send_effect()
+    void al_scene::clear_send_effect()
     {
         if (!m_EffectSlot) return;
 
@@ -197,17 +193,17 @@ namespace gdk::audio
         m_Effect.reset();
     }
 
-    bool openal_scene::has_send_effect() const
+    bool al_scene::has_send_effect() const
     {
         return static_cast<bool>(m_EffectSlot);
     }
 
-    ALuint openal_scene::effect_slot_handle() const
+    ALuint al_scene::effect_slot_handle() const
     {
         return m_EffectSlot.get();   
     }
 
-    ALuint openal_scene::ensure_effect(const ALint aType)
+    ALuint al_scene::ensure_effect(const ALint aType)
     {
         const auto &efx = efx_or_throw();
 
@@ -253,7 +249,7 @@ namespace gdk::audio
         return effect;
     }
 
-    void openal_scene::bind_effect_to_slot()
+    void al_scene::bind_effect_to_slot()
     {
         efx_or_throw().alAuxiliaryEffectSloti(m_EffectSlot.get(), EFX_EFFECTSLOT_EFFECT,
             static_cast<ALint>(m_Effect.get()));
@@ -262,7 +258,7 @@ namespace gdk::audio
             pEmitter->route_to_send(m_EffectSlot.get());
     }
 
-    void openal_scene::update()
+    void al_scene::update()
     {
         for (const auto &pEmitter : lock_and_prune(m_Emitters))
         {

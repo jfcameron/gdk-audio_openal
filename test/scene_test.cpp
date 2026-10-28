@@ -1,7 +1,8 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <jfc/catch.hpp>
 
+#include <gdk/audio/impl_al_emitter.h>
 #include <gdk/audio/exception.h>
 #include <gdk/audio/emitter.h>
 #include <gdk/audio/listener.h>
@@ -12,7 +13,7 @@
 
 #include "tones.h"
 
-#include <gdk/math_constants.h>
+#include <gdk/math/constants.h>
 
 #include <AL/al.h>
 
@@ -26,7 +27,7 @@ using namespace gdk::audio;
 
 namespace {
     struct fixture final {
-        context_unique_ptr_type pContext = openal_context::make();
+        context_shared_ptr_type pContext = openal_context::make();
         scene_shared_ptr_type pScene = pContext->make_scene();
 
         [[nodiscard]] emitter_shared_ptr_type emitter_for(const sound_shared_ptr_type &apSound) {
@@ -37,7 +38,7 @@ namespace {
 
 namespace {
     [[nodiscard]] audio_vector3_type al_position_of(const emitter_shared_ptr_type &aEmitter) {
-        const auto pImplementation = std::dynamic_pointer_cast<openal_emitter>(aEmitter);
+        const auto pImplementation = std::dynamic_pointer_cast<al_emitter>(aEmitter);
 
         REQUIRE(pImplementation != nullptr);
 
@@ -84,7 +85,7 @@ TEST_CASE("emitters reach the device in listener space", "[scene][listener]") {
 
     SECTION("the listener's rotation is applied as its inverse") {
         pEmitter->set_position({0, 0, -10});
-        ears.set_rotation(audio_quaternion_type::from_euler({0, numbers::pi_f / 2, 0}));
+        ears.set_rotation(audio_quaternion_type::from_euler({0, math::numbers::pi_f / 2, 0}));
         f.pScene->update();
 
         const auto heard = al_position_of(pEmitter);
@@ -100,7 +101,7 @@ TEST_CASE("emitters reach the device in listener space", "[scene][listener]") {
         f.pScene->update();
 
         ALfloat x = 0, y = 0, z = 0;
-        alGetSource3f(std::dynamic_pointer_cast<openal_emitter>(pEmitter)->source_handle(),
+        alGetSource3f(std::dynamic_pointer_cast<al_emitter>(pEmitter)->source_handle(),
             AL_VELOCITY, &x, &y, &z);
 
         REQUIRE(near({x, y, z}, audio_vector3_type::zero));
@@ -108,7 +109,7 @@ TEST_CASE("emitters reach the device in listener space", "[scene][listener]") {
 
     SECTION("every source is flagged listener relative") {
         ALint relative = AL_FALSE;
-        alGetSourcei(std::dynamic_pointer_cast<openal_emitter>(pEmitter)->source_handle(),
+        alGetSourcei(std::dynamic_pointer_cast<al_emitter>(pEmitter)->source_handle(),
             AL_SOURCE_RELATIVE, &relative);
 
         REQUIRE(relative == AL_TRUE);
@@ -119,7 +120,7 @@ TEST_CASE("emitter properties reach the device", "[emitter][listener]") {
     fixture f;
 
     auto pEmitter = f.emitter_for(short_tone());
-    const auto source = std::dynamic_pointer_cast<openal_emitter>(pEmitter)->source_handle();
+    const auto source = std::dynamic_pointer_cast<al_emitter>(pEmitter)->source_handle();
 
     const auto al_float = [&source](const ALenum aParameter) {
         ALfloat value = 0;
@@ -144,7 +145,7 @@ TEST_CASE("emitter properties reach the device", "[emitter][listener]") {
     }
 
     SECTION("cone angles are converted to degrees") {
-        pEmitter->set_cone(numbers::pi_f / 2, numbers::pi_f, 0.25f);
+        pEmitter->set_cone(math::numbers::pi_f / 2, math::numbers::pi_f, 0.25f);
 
         REQUIRE(al_float(AL_CONE_INNER_ANGLE) == Approx(90.0f));
         REQUIRE(al_float(AL_CONE_OUTER_ANGLE) == Approx(180.0f));
@@ -182,7 +183,7 @@ TEST_CASE("direction rotates with the listener but does not translate", "[emitte
     fixture f;
 
     auto pEmitter = f.emitter_for(short_tone());
-    const auto source = std::dynamic_pointer_cast<openal_emitter>(pEmitter)->source_handle();
+    const auto source = std::dynamic_pointer_cast<al_emitter>(pEmitter)->source_handle();
 
     const auto al_direction = [&source]() {
         ALfloat x = 0, y = 0, z = 0;
@@ -209,7 +210,7 @@ TEST_CASE("direction rotates with the listener but does not translate", "[emitte
     SECTION("turning the listener turns it") {
         pEmitter->set_direction({0, 0, -1});
         f.pScene->get_listener().set_rotation(
-            audio_quaternion_type::from_euler({0, numbers::pi_f / 2, 0}));
+            audio_quaternion_type::from_euler({0, math::numbers::pi_f / 2, 0}));
         f.pScene->update();
 
         const auto heard = al_direction();

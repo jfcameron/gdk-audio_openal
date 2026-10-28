@@ -1,4 +1,4 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <jfc/catch.hpp>
 
@@ -69,12 +69,12 @@ namespace {
     };
 
     constexpr openal_policy STREAMING{
-        .DISTANCE_MODEL = distance_model::linear_clamped,
-        .DOPPLER_FACTOR = 1,
-        .SPEED_OF_SOUND = 343.3f,
-        .STREAMING_THRESHOLD_IN_SECONDS = 0,
-        .STREAM_FRAMES_PER_BUFFER = 800,
-        .STREAM_BUFFER_COUNT = 2,
+        .distance_model = distance_model::linear_clamped,
+        .doppler_factor = 1,
+        .speed_of_sound = 343.3f,
+        .streaming_threshold_in_seconds = 0,
+        .stream_frames_per_buffer = 800,
+        .stream_buffer_count = 2,
     };
 }
 
@@ -206,7 +206,7 @@ TEST_CASE("discarding what is queued carries on from where the stream is", "[pau
 
     pEmitter->discard_queued();
 
-    REQUIRE(*pSound->pCursor == cursorAtDiscard + STREAMING.STREAM_FRAMES_PER_BUFFER * STREAMING.STREAM_BUFFER_COUNT);
+    REQUIRE(*pSound->pCursor == cursorAtDiscard + STREAMING.stream_frames_per_buffer * STREAMING.stream_buffer_count);
     REQUIRE(pEmitter->is_playing());
 
     pump(pScene, 0.3f);

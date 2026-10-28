@@ -1,4 +1,4 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <jfc/catch.hpp>
 
@@ -27,10 +27,10 @@ namespace {
     }
 
     constexpr openal_policy STREAMING{
-        .DISTANCE_MODEL = distance_model::linear_clamped,
-        .DOPPLER_FACTOR = 1,
-        .SPEED_OF_SOUND = 343.3f,
-        .STREAMING_THRESHOLD_IN_SECONDS = 0,
+        .distance_model = distance_model::linear_clamped,
+        .doppler_factor = 1,
+        .speed_of_sound = 343.3f,
+        .streaming_threshold_in_seconds = 0,
     };
 }
 

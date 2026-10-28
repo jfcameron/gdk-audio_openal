@@ -1,10 +1,10 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
-#include <gdk/audio/openal_emitter_group.h>
+#include <gdk/audio/impl_openal_emitter_group.h>
 
 namespace gdk::audio
 {
-    openal_emitter_group::openal_emitter_group(std::vector<std::shared_ptr<openal_emitter>> aMembers)
+    openal_emitter_group::openal_emitter_group(std::vector<std::shared_ptr<al_emitter>> aMembers)
     {
         m_Members.reserve(aMembers.size());
 
@@ -21,9 +21,9 @@ namespace gdk::audio
         for (const auto &pMember : members()) pMember->set_grouped(false);
     }
 
-    std::vector<std::shared_ptr<openal_emitter>> openal_emitter_group::members() const
+    std::vector<std::shared_ptr<al_emitter>> openal_emitter_group::members() const
     {
-        std::vector<std::shared_ptr<openal_emitter>> out;
+        std::vector<std::shared_ptr<al_emitter>> out;
 
         for (const auto &member : m_Members) if (auto pMember = member.lock()) out.push_back(std::move(pMember));
 
@@ -65,7 +65,7 @@ namespace gdk::audio
     void openal_emitter_group::resume()
     {
         std::vector<ALuint> paused;
-        std::vector<std::shared_ptr<openal_emitter>> resumed;
+        std::vector<std::shared_ptr<al_emitter>> resumed;
 
         for (const auto &pMember : members())
         {

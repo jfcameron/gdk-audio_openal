@@ -1,9 +1,9 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
-#ifndef GDK_AUDIO_OPENAL_STREAM_EMITTER_H
-#define GDK_AUDIO_OPENAL_STREAM_EMITTER_H
+#ifndef GDK_AUDIO_IMPL_OPENAL_STREAM_EMITTER_H
+#define GDK_AUDIO_IMPL_OPENAL_STREAM_EMITTER_H
 
-#include <gdk/audio/openal_emitter.h>
+#include <gdk/audio/impl_al_emitter.h>
 #include <gdk/audio/insert_effect.h>
 #include <gdk/audio/openal_policy.h>
 #include <gdk/audio/sound.h>
@@ -22,7 +22,7 @@
 
 namespace gdk::audio {
 	/// \brief a stream emitter decodes its sound as it plays
-    class openal_stream_emitter : public openal_emitter {
+    class openal_stream_emitter : public al_emitter {
 		openal_policy m_Policy;
 
 		insert_effect_collection_type m_Inserts;
@@ -65,7 +65,7 @@ namespace gdk::audio {
         virtual void before_pause() override;
 
     public:
-        openal_stream_emitter(const sound_shared_ptr_type &apSound,
+        openal_stream_emitter(openal_session_ptr_type apSession, const sound_shared_ptr_type &apSound,
             const openal_policy &aPolicy, insert_effect_collection_type aInserts = {},
             std::vector<vector_type> aChannelOffsets = {});
 

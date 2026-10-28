@@ -1,19 +1,29 @@
-# © Joseph Cameron - All Rights Reserved
+# © Joseph Cameron - MIT License
 
 cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
 
+if (TARGET gdkaudio_openal)
+    return()
+endif()
+
+project(gdk-audio_openal
+    VERSION 1.0
+    DESCRIPTION "the gdk audio interface, implemented over OpenAL"
+    LANGUAGES C CXX)
+
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/jfc-cmake/jfclib.cmake")
 
-project(gdkaudio_openal
-    VERSION 0.0
-    DESCRIPTION "game development kit audio, implemented over OpenAL"
-)
+option(GDKAUDIO_OPENAL_BUILD_TESTS "Build unit tests" ${PROJECT_IS_TOP_LEVEL})
+option(GDKAUDIO_OPENAL_BUILD_DEMO "Build the demos" OFF)
+option(GDKAUDIO_OPENAL_BUILD_DOCS "Build documentation" OFF)
+option(GDKAUDIO_OPENAL_INSTALL "Generate install rules, a vendored OpenAL Soft's included" ${PROJECT_IS_TOP_LEVEL})
+option(GDKAUDIO_OPENAL_VENDORED_OPENAL "Build OpenAL Soft from the vendored source even where the system has OpenAL" OFF)
 
-option(JFC_BUILD_DEMO "Build the demos" ON)
-option(JFC_BUILD_DOCS "Build documentation" OFF)
-option(JFC_BUILD_TESTS "Build unit tests" OFF)
+if (GDKAUDIO_OPENAL_BUILD_DOCS AND NOT GDKAUDIO_OPENAL_BUILD_TESTS AND NOT GDKAUDIO_OPENAL_BUILD_DEMO)
+    add_subdirectory(docs)
 
-add_subdirectory(extern)
+    return()
+endif()
 
 file(GLOB_RECURSE _gdk_audio_openal_own_sources
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
@@ -28,6 +38,8 @@ foreach(_source ${_gdk_audio_openal_own_sources})
             "individual headers this file actually needs.")
     endif()
 endforeach()
+
+add_subdirectory(extern)
 
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -52,50 +64,92 @@ else()
     endforeach()
 endif()
 
-add_library(gdkaudio_openal STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/openal_context.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/openal_efx.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/openal_emitter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/openal_emitter_group.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/openal_listener.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/openal_microphone.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/openal_scene.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/openal_simple_emitter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/openal_stream_emitter.cpp)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+set(GDKAUDIO_OPENAL_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/openal_context.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/openal_efx.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/openal_emitter.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/openal_emitter_group.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/openal_listener.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/openal_microphone.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/openal_scene.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/openal_simple_emitter.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/openal_stream_emitter.cpp")
+
+add_library(gdkaudio_openal STATIC ${GDKAUDIO_OPENAL_SOURCES})
 
 add_library(gdk::audio_openal ALIAS gdkaudio_openal)
 
-set_target_properties(gdkaudio_openal PROPERTIES EXPORT_NAME audio_openal)
-
-set_target_properties(gdkaudio_openal PROPERTIES PREFIX "lib")
-
-jfc_generate_build_info(INCLUDE_PATH "gdk/audio_openal")
+set_target_properties(gdkaudio_openal PROPERTIES EXPORT_NAME audio_openal PREFIX "lib")
 
 target_include_directories(gdkaudio_openal
     PUBLIC
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-        "$<INSTALL_INTERFACE:include>"
+        "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
     PRIVATE
-        "${PROJECT_BINARY_DIR}/generated_include/"
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/include
-)
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/include")
 
 target_compile_features(gdkaudio_openal PUBLIC cxx_std_20)
 
-target_link_libraries(gdkaudio_openal PUBLIC
-    gdkaudio
-    jfc-smart_handles
-    OpenAL)
+target_link_libraries(gdkaudio_openal
+    PUBLIC
+        gdkaudio
+    PRIVATE
+        $<BUILD_INTERFACE:gdkaudio_implementation>
+        $<BUILD_INTERFACE:jfc-smart_handles>)
 
-if (JFC_BUILD_DEMO)
-    add_subdirectory(demo)
+if (EMSCRIPTEN)
+    target_link_options(gdkaudio_openal PUBLIC "-lopenal")
+else()
+    target_link_libraries(gdkaudio_openal PRIVATE OpenAL::OpenAL)
 endif()
 
-if (JFC_BUILD_TESTS)
+if (GDKAUDIO_OPENAL_INSTALL)
+    install(TARGETS gdkaudio_openal
+        EXPORT gdk-audio_openal-targets
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+
+    install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+    install(EXPORT gdk-audio_openal-targets
+        FILE gdk-audio_openal-targets.cmake
+        NAMESPACE gdk::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/gdk-audio_openal")
+
+    write_basic_package_version_file(
+        "${PROJECT_BINARY_DIR}/gdk-audio_openal-config-version.cmake"
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion)
+
+    set(_gdkaudio_openal_find_openal "find_dependency(Threads)\nfind_dependency(OpenAL CONFIG)\n")
+
+    if (EMSCRIPTEN)
+        set(_gdkaudio_openal_find_openal "")
+    endif()
+
+    file(WRITE "${PROJECT_BINARY_DIR}/gdk-audio_openal-config.cmake"
+"include(CMakeFindDependencyMacro)
+find_dependency(gdk-audio 1)
+${_gdkaudio_openal_find_openal}include(\"\${CMAKE_CURRENT_LIST_DIR}/gdk-audio_openal-targets.cmake\")
+")
+
+    install(FILES
+        "${PROJECT_BINARY_DIR}/gdk-audio_openal-config.cmake"
+        "${PROJECT_BINARY_DIR}/gdk-audio_openal-config-version.cmake"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/gdk-audio_openal")
+endif()
+
+if (GDKAUDIO_OPENAL_BUILD_TESTS)
     add_subdirectory(test)
 endif()
 
-if (JFC_BUILD_DOCS)
-    add_subdirectory(docs)
+if (GDKAUDIO_OPENAL_BUILD_DEMO)
+    add_subdirectory(demo)
 endif()
 
+if (GDKAUDIO_OPENAL_BUILD_DOCS)
+    add_subdirectory(docs)
+endif()

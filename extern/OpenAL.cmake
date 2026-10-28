@@ -1,56 +1,43 @@
-# © Joseph Cameron - All Rights Reserved
+# © Joseph Cameron - MIT License
 
-option(GDK_AUDIO_VENDORED_OPENAL
-    "Build OpenAL Soft from the vendored source and link it statically" OFF)
-
-if (EMSCRIPTEN)
-    message(STATUS "gdk-audio_openal: emscripten's OpenAL, over Web Audio")
-    add_library(OpenAL INTERFACE)
-    target_link_libraries(OpenAL INTERFACE openal)
-
-    return()
-endif()
-
-if (NOT GDK_AUDIO_VENDORED_OPENAL)
+if (NOT GDKAUDIO_OPENAL_VENDORED_OPENAL)
     find_package(OpenAL CONFIG QUIET)
 endif()
 
 if (TARGET OpenAL::OpenAL)
-    message(STATUS "gdk-audio_openal: OpenAL from the system (${OpenAL_DIR}); GDK_AUDIO_VENDORED_OPENAL builds the vendored one")
-    add_library(OpenAL INTERFACE)
-    target_link_libraries(OpenAL INTERFACE OpenAL::OpenAL)
+    set_target_properties(OpenAL::OpenAL PROPERTIES IMPORTED_GLOBAL TRUE)
+
+    message(STATUS "gdk-audio_openal: OpenAL from the system (${OpenAL_DIR}); GDKAUDIO_OPENAL_VENDORED_OPENAL builds the vendored one")
 
     return()
 endif()
 
-message(STATUS "gdk-audio_openal: OpenAL built from the vendored source, linked statically")
+message(STATUS "gdk-audio_openal: OpenAL Soft built from the vendored source, linked statically")
 
 set(LIBTYPE STATIC)
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    find_package(Threads REQUIRED)
+set(ALSOFT_BACKEND_SNDIO OFF CACHE BOOL "" FORCE)
+set(ALSOFT_REQUIRE_SNDIO OFF CACHE BOOL "" FORCE)
+set(HAVE_WFUNCTION_EFFECTS 0 CACHE INTERNAL "")
+set(ALSOFT_UTILS OFF CACHE BOOL "" FORCE)
+set(ALSOFT_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(ALSOFT_TESTS OFF CACHE BOOL "" FORCE)
+set(ALSOFT_ENABLE_MODULES OFF CACHE BOOL "" FORCE)
+
+if (ANDROID)
+    set(ALSOFT_DLOPEN OFF CACHE BOOL "" FORCE)
+    set(ALSOFT_BACKEND_PIPEWIRE OFF CACHE BOOL "" FORCE)
+    set(ALSOFT_RTKIT OFF CACHE BOOL "" FORCE)
+endif()
+set(ALSOFT_INSTALL ${GDKAUDIO_OPENAL_INSTALL} CACHE BOOL "" FORCE)
+
+if (MSVC)
+    string(APPEND CMAKE_CXX_FLAGS " /WX-")
+    string(APPEND CMAKE_C_FLAGS " /WX-")
+else()
+    string(APPEND CMAKE_CXX_FLAGS " -include cstdlib -Wno-error")
+    string(APPEND CMAKE_C_FLAGS " -Wno-error")
 endif()
 
-add_subdirectory(OpenAL)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/OpenAL")
 
-if (NOT MSVC)
-    target_compile_options(OpenAL PRIVATE 
-        -Wno-error=range-loop-construct
-        -Wno-error=uninitialized
-    )
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        target_compile_options(OpenAL PRIVATE -Wno-error=maybe-uninitialized)
-    endif()
-endif()
-
-if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    set_target_properties(OpenAL PROPERTIES PREFIX "lib")
-endif()
-
-target_include_directories(OpenAL INTERFACE
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/OpenAL/include>")
-
-if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    set_property(TARGET OpenAL APPEND PROPERTY
-        INTERFACE_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
-endif()

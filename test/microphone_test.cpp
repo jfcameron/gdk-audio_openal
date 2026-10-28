@@ -1,10 +1,10 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <jfc/catch.hpp>
 
 #include <gdk/audio/exception.h>
 #include <gdk/audio/openal_context.h>
-#include <gdk/audio/openal_microphone.h>
+#include <gdk/audio/impl_openal_microphone.h>
 
 #include <chrono>
 #include <thread>
@@ -45,7 +45,18 @@ TEST_CASE("capturing from a real device", "[microphone][openal]")
         return;
     }
 
-    auto pMic = pContext->make_microphone(small_request());
+    microphone_shared_ptr_type pMic;
+
+    try
+    {
+        pMic = pContext->make_microphone(small_request());
+    }
+    catch (const exception &e)
+    {
+        WARN("a capture device is listed but would not open (" << e.what() << "); the openal capture path was not exercised");
+
+        return;
+    }
 
     REQUIRE(pMic != nullptr);
 

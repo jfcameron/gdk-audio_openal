@@ -1,4 +1,4 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <jfc/catch.hpp>
 
@@ -8,8 +8,8 @@
 #include <gdk/audio/emitter.h>
 #include <gdk/audio/sound.h>
 
-#include <gdk/audio/openal_simple_emitter.h>
-#include <gdk/audio/openal_stream_emitter.h>
+#include <gdk/audio/impl_openal_simple_emitter.h>
+#include <gdk/audio/impl_openal_stream_emitter.h>
 
 #include "tones.h"
 
@@ -21,7 +21,7 @@ using namespace gdk::audio;
 
 namespace {
     struct fixture final {
-        context_unique_ptr_type pContext = openal_context::make();
+        context_shared_ptr_type pContext = openal_context::make();
         scene_shared_ptr_type pScene = pContext->make_scene();
 
         [[nodiscard]] std::shared_ptr<emitter> emitter_for(const sound_shared_ptr_type &apSound) {
