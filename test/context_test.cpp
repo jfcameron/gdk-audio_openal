@@ -1,4 +1,4 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <jfc/catch.hpp>
 
@@ -6,8 +6,8 @@
 #include <gdk/audio/context.h>
 #include <gdk/audio/openal_context.h>
 #include <gdk/audio/openal_policy.h>
-#include <gdk/audio/openal_simple_emitter.h>
-#include <gdk/audio/openal_stream_emitter.h>
+#include <gdk/audio/impl_openal_simple_emitter.h>
+#include <gdk/audio/impl_openal_stream_emitter.h>
 #include <gdk/audio/emitter.h>
 #include <gdk/audio/scene.h>
 #include <gdk/audio/sound.h>
@@ -26,7 +26,7 @@ using namespace gdk;
 using namespace gdk::audio;
 
 namespace {
-    [[nodiscard]] context_unique_ptr_type make_context() {
+    [[nodiscard]] context_shared_ptr_type make_context() {
         return openal_context::make();
     }
 }
@@ -55,8 +55,8 @@ TEST_CASE("the refusal is about overlap, not about counting", "[context]") {
 TEST_CASE("the test tones straddle the streaming threshold", "[context][sound]") {
     const openal_policy defaults;
 
-    REQUIRE(short_tone()->duration() < defaults.STREAMING_THRESHOLD_IN_SECONDS);
-    REQUIRE(long_tone()->duration() > defaults.STREAMING_THRESHOLD_IN_SECONDS);
+    REQUIRE(short_tone()->duration() < defaults.streaming_threshold_in_seconds);
+    REQUIRE(long_tone()->duration() > defaults.streaming_threshold_in_seconds);
 }
 
 TEST_CASE("the context policy is honoured", "[context][policy]") {
@@ -81,8 +81,8 @@ TEST_CASE("the context policy is honoured", "[context][policy]") {
 
     SECTION("doppler factor and speed of sound reach the device") {
         auto pContext = openal_context::make(
-            openal_policy{.DISTANCE_MODEL = distance_model::linear_clamped,
-                .DOPPLER_FACTOR = 2.5f, .SPEED_OF_SOUND = 500.0f});
+            openal_policy{.distance_model = distance_model::linear_clamped,
+                .doppler_factor = 2.5f, .speed_of_sound = 500.0f});
 
         REQUIRE(alGetFloat(AL_DOPPLER_FACTOR) == Approx(2.5f));
         REQUIRE(alGetFloat(AL_SPEED_OF_SOUND) == Approx(500.0f));
@@ -90,9 +90,9 @@ TEST_CASE("the context policy is honoured", "[context][policy]") {
 
     SECTION("the streaming threshold decides the emitter implementation") {
         auto pContext = openal_context::make(
-            openal_policy{.DISTANCE_MODEL = distance_model::linear_clamped,
-                .DOPPLER_FACTOR = 1, .SPEED_OF_SOUND = 343.3f,
-                .STREAMING_THRESHOLD_IN_SECONDS = 0.5f});
+            openal_policy{.distance_model = distance_model::linear_clamped,
+                .doppler_factor = 1, .speed_of_sound = 343.3f,
+                .streaming_threshold_in_seconds = 0.5f});
 
         auto pScene = pContext->make_scene();
 
@@ -103,9 +103,9 @@ TEST_CASE("the context policy is honoured", "[context][policy]") {
 
     SECTION("a scene made from the context carries its policy") {
         auto pContext = openal_context::make(
-            openal_policy{.DISTANCE_MODEL = distance_model::linear_clamped,
-                .DOPPLER_FACTOR = 1, .SPEED_OF_SOUND = 343.3f,
-                .STREAMING_THRESHOLD_IN_SECONDS = 100.0f});
+            openal_policy{.distance_model = distance_model::linear_clamped,
+                .doppler_factor = 1, .speed_of_sound = 343.3f,
+                .streaming_threshold_in_seconds = 100.0f});
 
         auto pScene = pContext->make_scene();
 

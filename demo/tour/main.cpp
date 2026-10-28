@@ -1,4 +1,4 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <gdk/audio/context.h>
 #include <gdk/audio/emitter.h>
@@ -9,7 +9,7 @@
 #include <gdk/audio/scene.h>
 #include <gdk/audio/sound.h>
 
-#include <gdk/math_constants.h>
+#include <gdk/math/constants.h>
 
 #include <jfc/POL_chubby_cat_short.ogg.h>
 
@@ -35,9 +35,9 @@ namespace {
 
 int main() {
     const audio::openal_policy policy{
-        .DISTANCE_MODEL = audio::distance_model::inverse_clamped,
-        .DOPPLER_FACTOR = 1.0f,                 
-        .SPEED_OF_SOUND = 343.3f,               
+        .distance_model = audio::distance_model::inverse_clamped,
+        .doppler_factor = 1.0f,                 
+        .speed_of_sound = 343.3f,               
     };
 
     auto pAudio = audio::openal_context::make(policy);
@@ -86,12 +86,12 @@ int main() {
 
         switch (current) {
             case 0: {
-                const float angle = 2.0f * numbers::pi_f * t;
+                const float angle = 2.0f * math::numbers::pi_f * t;
 
                 ears.set_transform({std::sin(angle) * ORBIT_RADIUS, 0, std::cos(angle) * ORBIT_RADIUS},
                     audio::audio_quaternion_type::from_euler({0, angle, 0}));
 
-                const float speed = 2.0f * numbers::pi_f * ORBIT_RADIUS / phase;
+                const float speed = 2.0f * math::numbers::pi_f * ORBIT_RADIUS / phase;
 
                 ears.set_velocity({std::cos(angle) * speed, 0, -std::sin(angle) * speed});
             } break;
@@ -107,9 +107,9 @@ int main() {
 
             case 2: {
                 pEmitter->set_direction({1, 0, 0});
-                pEmitter->set_cone(numbers::pi_f / 4, numbers::pi_f / 2, 0.25f);
+                pEmitter->set_cone(math::numbers::pi_f / 4, math::numbers::pi_f / 2, 0.25f);
 
-                const float angle = 2.0f * numbers::pi_f * t;
+                const float angle = 2.0f * math::numbers::pi_f * t;
 
                 ears.set_transform({std::sin(angle) * ORBIT_RADIUS, 0, std::cos(angle) * ORBIT_RADIUS},
                     audio::audio_quaternion_type::from_euler({0, angle, 0}));

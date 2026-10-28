@@ -1,7 +1,7 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <gdk/audio/exception.h>
-#include <gdk/audio/openal_stream_emitter.h>
+#include <gdk/audio/impl_openal_stream_emitter.h>
 
 #include <algorithm>
 #include <cstring>
@@ -11,10 +11,10 @@
 
 namespace gdk::audio
 {
-    openal_stream_emitter::openal_stream_emitter(const sound_shared_ptr_type &apSound,
-        const openal_policy &aPolicy, insert_effect_collection_type aInserts,
+    openal_stream_emitter::openal_stream_emitter(openal_session_ptr_type apSession,
+        const sound_shared_ptr_type &apSound, const openal_policy &aPolicy, insert_effect_collection_type aInserts,
         std::vector<vector_type> aChannelOffsets)
-    : openal_emitter([&]()
+    : al_emitter(std::move(apSession), [&]()
     {
         if (!aChannelOffsets.empty() && aChannelOffsets.size() != apSound->channel_count())
             throw exception("an emitter placing a sound's channels needs a place for each: the sound has "
@@ -33,7 +33,7 @@ namespace gdk::audio
     , m_SampleRate(static_cast<ALsizei>(apSound->sample_rate()))
     , m_alBufferHandles([&]()
     {
-        const auto count = std::max<std::size_t>(2, aPolicy.STREAM_BUFFER_COUNT);
+        const auto count = std::max<std::size_t>(2, aPolicy.stream_buffer_count);
         const auto sources = std::max<std::size_t>(1, aChannelOffsets.size());
 
         std::vector<std::vector<jfc::shared_handle<ALuint>>> handles(sources);
@@ -58,9 +58,9 @@ namespace gdk::audio
     {
         if (!m_pStream) throw exception("a sound handed back no stream to decode");
 
-        m_PCMBuffer.resize(m_Policy.STREAM_FRAMES_PER_BUFFER * m_BytesPerFrame);
+        m_PCMBuffer.resize(m_Policy.stream_frames_per_buffer * m_BytesPerFrame);
 
-        if (is_split()) m_ChannelBuffer.resize(m_Policy.STREAM_FRAMES_PER_BUFFER * m_BytesPerSample);
+        if (is_split()) m_ChannelBuffer.resize(m_Policy.stream_frames_per_buffer * m_BytesPerSample);
 
         m_FramesInSlot.assign(m_alBufferHandles.front().size(), 0);
 
@@ -90,7 +90,7 @@ namespace gdk::audio
 
     void openal_stream_emitter::play()
     {
-        if (m_state != state::stopped) return;
+        stop_sources();
 
         begin_play();
 

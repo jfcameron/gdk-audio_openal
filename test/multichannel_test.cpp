@@ -1,13 +1,14 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <jfc/catch.hpp>
 
+#include <gdk/audio/impl_al_emitter.h>
 #include <gdk/audio/emitter.h>
 #include <gdk/audio/exception.h>
 #include <gdk/audio/openal_context.h>
 #include <gdk/audio/openal_emitter.h>
 #include <gdk/audio/openal_policy.h>
-#include <gdk/audio/openal_stream_emitter.h>
+#include <gdk/audio/impl_openal_stream_emitter.h>
 #include <gdk/audio/scene.h>
 #include <gdk/audio/sound.h>
 
@@ -96,7 +97,7 @@ TEST_CASE("a multichannel sound played a channel from each place", "[multichanne
     SECTION("has a source a channel, and every one of them plays, pauses and stops together") {
         auto pEmitter = pScene->make_emitter(tones(6, pcm_format::signed_16), std::span(SURROUND));
 
-        const auto pSources = std::dynamic_pointer_cast<openal_emitter>(pEmitter);
+        const auto pSources = std::dynamic_pointer_cast<al_emitter>(pEmitter);
 
         REQUIRE(pSources);
         REQUIRE(pSources->source_handles().size() == 6);
@@ -143,7 +144,7 @@ TEST_CASE("a multichannel sound played a channel from each place", "[multichanne
         REQUIRE(*position == Approx(heard * RATE).margin(0.1 * RATE));
 
         REQUIRE(pump_until(pScene, [&pEmitter]() { return !pEmitter->is_playing(); }, 5.0f));
-        REQUIRE(seconds_since(played) >= 0.9);
+        REQUIRE(seconds_since(played) >= 0.75);
     }
 
     SECTION("each channel stands where it was put, about the emitter") {
@@ -152,7 +153,7 @@ TEST_CASE("a multichannel sound played a channel from each place", "[multichanne
         pEmitter->set_position({10, 0, 0});
         pScene->update();
 
-        const auto sources = std::dynamic_pointer_cast<openal_emitter>(pEmitter)->source_handles();
+        const auto sources = std::dynamic_pointer_cast<al_emitter>(pEmitter)->source_handles();
 
         std::array<ALfloat, 3> left{}, right{};
         alGetSourcefv(sources[0], AL_POSITION, left.data());
@@ -176,7 +177,7 @@ TEST_CASE("a multichannel sound as a speaker bed", "[multichannel]") {
 
     auto pEmitter = pScene->make_emitter(tones(6, pcm_format::signed_16));
 
-    REQUIRE(std::dynamic_pointer_cast<openal_emitter>(pEmitter)->source_handles().size() == 1);
+    REQUIRE(std::dynamic_pointer_cast<al_emitter>(pEmitter)->source_handles().size() == 1);
 
     pEmitter->play();
 

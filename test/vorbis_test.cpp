@@ -1,12 +1,12 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <jfc/catch.hpp>
 
 #include <gdk/audio/emitter.h>
 #include <gdk/audio/ext/vorbis.h>
 #include <gdk/audio/openal_context.h>
-#include <gdk/audio/openal_simple_emitter.h>
-#include <gdk/audio/openal_stream_emitter.h>
+#include <gdk/audio/impl_openal_simple_emitter.h>
+#include <gdk/audio/impl_openal_stream_emitter.h>
 #include <gdk/audio/scene.h>
 
 #include "data/long_tone_ogg.h"

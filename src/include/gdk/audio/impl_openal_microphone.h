@@ -1,7 +1,7 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
-#ifndef GDK_AUDIO_OPENAL_MICROPHONE_H
-#define GDK_AUDIO_OPENAL_MICROPHONE_H
+#ifndef GDK_AUDIO_IMPL_OPENAL_MICROPHONE_H
+#define GDK_AUDIO_IMPL_OPENAL_MICROPHONE_H
 
 #include <gdk/audio/microphone.h>
 
@@ -13,9 +13,7 @@
 #include <string>
 
 namespace gdk::audio {
-    namespace ext {
-        class capture_buffer;
-    }
+    class capture_buffer;
 
     /// \brief captures through OpenAL's ALC_EXT_CAPTURE
     class openal_microphone final : public microphone {
@@ -52,7 +50,7 @@ namespace gdk::audio {
 
         std::unique_ptr<ALCdevice, std::function<void(ALCdevice *const)>> m_pDevice;
 
-        std::unique_ptr<ext::capture_buffer> m_pCaptured;
+        std::unique_ptr<capture_buffer> m_pCaptured;
 
         bool mCapturing{false};
     };

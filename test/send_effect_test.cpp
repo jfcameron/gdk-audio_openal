@@ -1,7 +1,9 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <jfc/catch.hpp>
 
+#include <gdk/audio/impl_al_emitter.h>
+#include <gdk/audio/impl_al_scene.h>
 #include <gdk/audio/exception.h>
 #include <gdk/audio/emitter.h>
 #include <gdk/audio/openal_context.h>
@@ -23,11 +25,11 @@ using namespace gdk::audio;
 
 namespace {
     struct fixture final {
-        context_unique_ptr_type pContext = openal_context::make();
-        std::shared_ptr<openal_scene> pScene = std::dynamic_pointer_cast<openal_scene>(pContext->make_scene());
+        context_shared_ptr_type pContext = openal_context::make();
+        std::shared_ptr<al_scene> pScene = std::dynamic_pointer_cast<al_scene>(pContext->make_scene());
 
-        [[nodiscard]] std::shared_ptr<openal_emitter> emitter() const {
-            return std::dynamic_pointer_cast<openal_emitter>(pScene->make_emitter(short_tone()));
+        [[nodiscard]] std::shared_ptr<al_emitter> emitter() const {
+            return std::dynamic_pointer_cast<al_emitter>(pScene->make_emitter(short_tone()));
         }
 
         [[nodiscard]] ALuint slot() const {
@@ -57,11 +59,11 @@ namespace {
     }
 
     [[nodiscard]] ALuint filter_of(const emitter_shared_ptr_type &aEmitter) {
-        return std::dynamic_pointer_cast<openal_emitter>(aEmitter)->lowpass_filter_handle();
+        return std::dynamic_pointer_cast<al_emitter>(aEmitter)->lowpass_filter_handle();
     }
 
     [[nodiscard]] ALuint send_of(const emitter_shared_ptr_type &aEmitter) {
-        return std::dynamic_pointer_cast<openal_emitter>(aEmitter)->send_slot();
+        return std::dynamic_pointer_cast<al_emitter>(aEmitter)->send_slot();
     }
 
     [[nodiscard]] ALint filter_property(const ALuint aFilter, const ALenum aParameter) {
@@ -187,8 +189,8 @@ TEST_CASE("clearing a scene that has no send is harmless", "[send]") {
 TEST_CASE("a send belongs to one scene", "[send]") {
     auto pContext = openal_context::make();
 
-    const auto pWet = std::dynamic_pointer_cast<openal_scene>(pContext->make_scene());
-    const auto pDry = std::dynamic_pointer_cast<openal_scene>(pContext->make_scene());
+    const auto pWet = std::dynamic_pointer_cast<al_scene>(pContext->make_scene());
+    const auto pDry = std::dynamic_pointer_cast<al_scene>(pContext->make_scene());
 
     pWet->set_reverb({});
 

@@ -1,9 +1,9 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
-#include <gdk/audio/openal_microphone.h>
+#include <gdk/audio/impl_openal_microphone.h>
 
 #include <gdk/audio/exception.h>
-#include <gdk/audio/ext/capture_buffer.h>
+#include <gdk/audio/impl_capture_buffer.h>
 
 #include <algorithm>
 #include <vector>
@@ -29,7 +29,7 @@ namespace {
 }
 
 openal_microphone::openal_microphone(const request &aRequest)
-: mRequest(ext::validated(aRequest))
+: mRequest(validated(aRequest))
 , m_pDevice({
     [this]() {
         if (!alcIsExtensionPresent(nullptr, "ALC_EXT_CAPTURE"))
@@ -50,7 +50,7 @@ openal_microphone::openal_microphone(const request &aRequest)
         alcCaptureStop(p);
         alcCaptureCloseDevice(p);
     }})
-, m_pCaptured(std::make_unique<ext::capture_buffer>(mRequest.capacity_in_frames,
+, m_pCaptured(std::make_unique<capture_buffer>(mRequest.capacity_in_frames,
     mRequest.channel_count * bytes_per_sample(mRequest.format), mRequest.drop_oldest_when_full)) {
     if (const auto *const pName = alcGetString(m_pDevice.get(), ALC_CAPTURE_DEVICE_SPECIFIER))
         mDeviceName = pName;

@@ -1,6 +1,6 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
-#include <gdk/audio/openal_listener.h>
+#include <gdk/audio/impl_openal_listener.h>
 
 namespace gdk::audio
 {

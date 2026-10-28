@@ -1,42 +1,45 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <gdk/audio/openal_context.h>
 
-#include <gdk/audio/impl_efx.h>
-#include <gdk/audio/openal_microphone.h>
 #include <gdk/audio/exception.h>
-#include <gdk/audio/openal_stream_emitter.h>
-#include <gdk/audio/openal_simple_emitter.h>
+#include <gdk/audio/impl_al_scene.h>
+#include <gdk/audio/impl_efx.h>
+#include <gdk/audio/impl_openal_microphone.h>
+#include <gdk/audio/impl_openal_session.h>
 
-#include <iostream>
-#include <fstream>
+#include <AL/al.h>
+#include <AL/alc.h>
+
 #include <string>
-
-static inline std::string al_error_code_to_string(ALenum aError) {
-	switch (aError) {
-		case AL_NO_ERROR: return "AL_NO_ERROR";
-		case AL_INVALID_NAME: return "AL_INVALID_NAME";
-		case AL_INVALID_ENUM: return "AL_INVALID_ENUM";
-		case AL_INVALID_VALUE: return "AL_INVALID_VALUE";
-		case AL_INVALID_OPERATION: return "AL_INVALID_OPERATION";
-		case AL_OUT_OF_MEMORY: return "AL_OUT_OF_MEMORY";
-	}
-
-	return "unrecognized OpenAL error code " + std::to_string(aError);
-}
-
-static inline std::string alc_failure(ALCdevice *const apDevice) {
-	const auto error = alcGetError(apDevice);
-	const auto *const pError = alcGetString(apDevice, error);
-	const auto *const pName = apDevice ? alcGetString(apDevice, alcIsExtensionPresent(apDevice, "ALC_ENUMERATE_ALL_EXT")
-		? ALC_ALL_DEVICES_SPECIFIER : ALC_DEVICE_SPECIFIER) : nullptr;
-
-	return std::string(pName ? pName : "the default device") + ": "
-		+ (pError ? pError : "unrecognized ALC error code " + std::to_string(error));
-}
 
 namespace gdk::audio {
     namespace {
+        bool gSessionIsOpen = false;
+
+        [[nodiscard]] std::string al_error_code_to_string(const ALenum aError) {
+            switch (aError) {
+                case AL_NO_ERROR: return "AL_NO_ERROR";
+                case AL_INVALID_NAME: return "AL_INVALID_NAME";
+                case AL_INVALID_ENUM: return "AL_INVALID_ENUM";
+                case AL_INVALID_VALUE: return "AL_INVALID_VALUE";
+                case AL_INVALID_OPERATION: return "AL_INVALID_OPERATION";
+                case AL_OUT_OF_MEMORY: return "AL_OUT_OF_MEMORY";
+            }
+
+            return "unrecognized OpenAL error code " + std::to_string(aError);
+        }
+
+        [[nodiscard]] std::string alc_failure(ALCdevice *const apDevice) {
+            const auto error = alcGetError(apDevice);
+            const auto *const pError = alcGetString(apDevice, error);
+            const auto *const pName = apDevice ? alcGetString(apDevice, alcIsExtensionPresent(apDevice, "ALC_ENUMERATE_ALL_EXT")
+                ? ALC_ALL_DEVICES_SPECIFIER : ALC_DEVICE_SPECIFIER) : nullptr;
+
+            return std::string(pName ? pName : "the default device") + ": "
+                + (pError ? pError : "unrecognized ALC error code " + std::to_string(error));
+        }
+
         [[nodiscard]] ALenum al_distance_model_from(const distance_model aModel) {
             switch (aModel) {
                 case distance_model::none: return AL_NONE;
@@ -50,97 +53,89 @@ namespace gdk::audio {
 
             throw exception("unrecognized distance model");
         }
-
-        bool aContextIsLive = false;
     }
 
-    context_unique_ptr_type openal_context::make(openal_policy aPolicy)
-    {
-        return context_unique_ptr_type(new openal_context(std::move(aPolicy)));
+    openal_session::openal_session(const openal_policy &aPolicy) {
+        if (gSessionIsOpen) throw exception("a gdk::audio openal context's device is still open. OpenAL makes one "
+            "context current per process, so a second would silence the first");
+
+        m_pDevice = alcOpenDevice(nullptr);
+
+        if (!m_pDevice) throw exception("could not open an audio device: " + alc_failure(nullptr));
+
+        const auto fail = [this](const std::string &aWhy) {
+            alcMakeContextCurrent(nullptr);
+
+            if (m_pContext) alcDestroyContext(m_pContext);
+
+            alcCloseDevice(m_pDevice);
+
+            throw exception(aWhy);
+        };
+
+        m_pContext = alcCreateContext(m_pDevice, nullptr);
+
+        if (!m_pContext) fail("could not start the audio device, " + alc_failure(m_pDevice));
+
+        if (!alcMakeContextCurrent(m_pContext)) fail("could not make the audio context current");
+
+        if (const auto error = alGetError(); error != AL_NO_ERROR) fail(al_error_code_to_string(error));
+
+        alDistanceModel(al_distance_model_from(aPolicy.distance_model));
+        alDopplerFactor(aPolicy.doppler_factor);
+        alSpeedOfSound(aPolicy.speed_of_sound);
+
+        gSessionIsOpen = true;
     }
 
-    openal_context::~openal_context()
-    {
+    openal_session::~openal_session() {
         forget_efx();
 
-        aContextIsLive = false;
+        alcMakeContextCurrent(nullptr);
+        alcDestroyContext(m_pContext);
+        alcCloseDevice(m_pDevice);
+
+        gSessionIsOpen = false;
+    }
+
+    ALCdevice *openal_session::device() const { return m_pDevice; }
+
+    std::shared_ptr<openal_context> openal_context::make(openal_policy aPolicy) {
+        return std::shared_ptr<openal_context>(new openal_context(std::move(aPolicy)));
     }
 
     openal_context::openal_context(openal_policy aPolicy)
     : m_Policy(std::move(aPolicy))
-    , m_pCurrentDevice({
-        []()
-        {
-			if (aContextIsLive) throw exception("a gdk::audio context is already live. OpenAL "
-				"makes one context current per process, so a second would silence the first");
+    , m_pSession(std::make_shared<openal_session>(m_Policy))
+    {}
 
-			auto device_buffer = alcOpenDevice(0); 
+    openal_context::~openal_context() = default;
 
-			if (!device_buffer) 
-				throw exception("could not open an audio device: " + alc_failure(nullptr));
-
-			return device_buffer;
-        }(),
-        [](ALCdevice *const p)
-        {
-            alcCloseDevice(p);
-        }})
-    , m_pContext({
-        [this]()
-        {
-            auto context_buffer = alcCreateContext(m_pCurrentDevice.get(), 0);
-
-			if (!context_buffer)
-				throw exception("could not start the audio device, " + alc_failure(m_pCurrentDevice.get()));
-
-			alcProcessContext(context_buffer);
-
-            if (!alcMakeContextCurrent(context_buffer)) 
-				throw exception("could not make initial audio context current");
-
-            return context_buffer;
-        }(), 
-        [](ALCcontext *const p)
-        {
-            alcDestroyContext(p);
-        }})
-    {
-        if (const auto error = alGetError(); error != AL_NO_ERROR) 
-            throw exception(al_error_code_to_string(error));
-
-        aContextIsLive = true;
-
-		alDistanceModel(al_distance_model_from(m_Policy.DISTANCE_MODEL));
-		alDopplerFactor(m_Policy.DOPPLER_FACTOR);
-		alSpeedOfSound(m_Policy.SPEED_OF_SOUND);
-    }
-    
     std::vector<std::string> openal_context::capture_device_names() const {
-	if (!alcIsExtensionPresent(nullptr, "ALC_EXT_CAPTURE")) return {};
+        if (!alcIsExtensionPresent(nullptr, "ALC_EXT_CAPTURE")) return {};
 
-	const auto *pAt = alcGetString(nullptr, ALC_CAPTURE_DEVICE_SPECIFIER);
+        const auto *pAt = alcGetString(nullptr, ALC_CAPTURE_DEVICE_SPECIFIER);
 
-	if (!pAt) return {};
+        if (!pAt) return {};
 
-	std::vector<std::string> out;
+        std::vector<std::string> out;
 
-	while (*pAt) {
-		out.emplace_back(pAt);
+        while (*pAt) {
+            out.emplace_back(pAt);
 
-		pAt += out.back().size() + 1;
-	}
+            pAt += out.back().size() + 1;
+        }
 
-	return out;
-}
-
-microphone_shared_ptr_type openal_context::make_microphone(const microphone::request &aRequest) {
-	return std::make_shared<openal_microphone>(aRequest);
-}
-
-scene_shared_ptr_type openal_context::make_scene()
-    {
-        return openal_scene::make(m_Policy);
+        return out;
     }
 
-}
+    microphone_shared_ptr_type openal_context::make_microphone(const microphone::request &aRequest) {
+        return std::make_shared<openal_microphone>(aRequest);
+    }
 
+    std::shared_ptr<openal_scene> openal_context::make_openal_scene() {
+        return std::make_shared<al_scene>(m_pSession, m_Policy);
+    }
+
+    scene_shared_ptr_type openal_context::make_scene() { return make_openal_scene(); }
+}

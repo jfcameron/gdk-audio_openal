@@ -1,7 +1,7 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
 #include <gdk/audio/exception.h>
-#include <gdk/audio/openal_simple_emitter.h>
+#include <gdk/audio/impl_openal_simple_emitter.h>
 
 #include <algorithm>
 #include <vector>
@@ -9,9 +9,9 @@
 
 namespace gdk::audio
 {
-    openal_simple_emitter::openal_simple_emitter(const sound_shared_ptr_type &apSound,
-        const openal_policy &aPolicy)
-    : openal_emitter()
+    openal_simple_emitter::openal_simple_emitter(openal_session_ptr_type apSession,
+        const sound_shared_ptr_type &apSound, const openal_policy &aPolicy)
+    : al_emitter(std::move(apSession))
 	, m_ALBufferHandle([&apSound, &aPolicy]()
 	{
 		const auto bytesPerFrame = apSound->channel_count() * bytes_per_sample(apSound->format());
@@ -21,7 +21,7 @@ namespace gdk::audio
 		if (!pStream) throw exception("a sound handed back no stream to decode");
 
 		std::vector<unsigned char> pcm;
-		std::vector<unsigned char> chunk(aPolicy.DECODE_FRAMES_PER_READ * bytesPerFrame);
+		std::vector<unsigned char> chunk(aPolicy.decode_frames_per_read * bytesPerFrame);
 
 		while (const auto frames = pStream->read(std::as_writable_bytes(std::span(chunk))))
 			pcm.insert(pcm.end(), chunk.begin(), chunk.begin() + (frames * bytesPerFrame));
@@ -45,11 +45,12 @@ namespace gdk::audio
 		alDeleteBuffers(1, &a);
 	})
 	, m_SampleRate(static_cast<ALsizei>(apSound->sample_rate()))
+	, m_SecondsPerLoop(apSound->duration())
     {}
 
     void openal_simple_emitter::set_looping(const bool aLooping)
     {
-        openal_emitter::set_looping(aLooping);
+        al_emitter::set_looping(aLooping);
 
         alSourcei(source_handle(), AL_LOOPING, aLooping ? AL_TRUE : AL_FALSE);
     }
@@ -61,6 +62,9 @@ namespace gdk::audio
 		alSourceRewind(source_handle());
 
 		alSourcei(source_handle(), AL_BUFFER, static_cast<ALint>(handle));
+
+        m_Loops = 0;
+        m_LastOffset = 0;
 
         m_state = state::playing;
     }
@@ -79,6 +83,15 @@ namespace gdk::audio
             case state::playing:
             {
                 const auto sourceHandle = source_handle();
+
+                if (m_Looping)
+                {
+                    const auto offset = source_offset_and_latency().first;
+
+                    if (offset < m_LastOffset) ++m_Loops;
+
+                    m_LastOffset = offset;
+                }
 
                 ALint processed;
                 alGetSourcei(sourceHandle, AL_BUFFERS_PROCESSED, &processed);
@@ -100,6 +113,9 @@ namespace gdk::audio
 	{
 		stop_sources();
 
+		m_Loops = 0;
+		m_LastOffset = 0;
+
 		m_state = state::stopped;
 	}
 
@@ -112,6 +128,8 @@ namespace gdk::audio
 
 		const auto [offset, latency] = source_offset_and_latency();
 
-		return std::max(0.0, (offset - latency) * m_SampleRate);
+		const auto loops = m_Loops + (m_Looping && offset < m_LastOffset ? 1 : 0);
+
+		return std::max(0.0, (static_cast<double>(loops) * m_SecondsPerLoop + offset - latency) * m_SampleRate);
 	}
 }

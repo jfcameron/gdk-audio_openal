@@ -1,10 +1,10 @@
-// © Joseph Cameron - All Rights Reserved
+// © Joseph Cameron - MIT License
 
-#ifndef GDK_AUDIO_OPENAL_EMITTER_GROUP_H
-#define GDK_AUDIO_OPENAL_EMITTER_GROUP_H
+#ifndef GDK_AUDIO_IMPL_OPENAL_EMITTER_GROUP_H
+#define GDK_AUDIO_IMPL_OPENAL_EMITTER_GROUP_H
 
 #include <gdk/audio/emitter_group.h>
-#include <gdk/audio/openal_emitter.h>
+#include <gdk/audio/impl_al_emitter.h>
 #include <gdk/audio/types.h>
 
 #include <AL/al.h>
@@ -15,14 +15,14 @@
 namespace gdk::audio {
     /// \brief openal implementation of emitter_group: one alSourcePlayv over every member's sources
     class openal_emitter_group final : public emitter_group {
-        std::vector<std::weak_ptr<openal_emitter>> m_Members;
+        std::vector<std::weak_ptr<al_emitter>> m_Members;
 
-        [[nodiscard]] std::vector<std::shared_ptr<openal_emitter>> members() const;
+        [[nodiscard]] std::vector<std::shared_ptr<al_emitter>> members() const;
 
         [[nodiscard]] std::vector<ALuint> sources() const;
 
     public:
-        explicit openal_emitter_group(std::vector<std::shared_ptr<openal_emitter>> aMembers);
+        explicit openal_emitter_group(std::vector<std::shared_ptr<al_emitter>> aMembers);
 
         virtual void play() override;
 
