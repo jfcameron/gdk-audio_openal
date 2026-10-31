@@ -19,10 +19,18 @@ option(GDKAUDIO_OPENAL_BUILD_DOCS "Build documentation" OFF)
 option(GDKAUDIO_OPENAL_INSTALL "Generate install rules, a vendored OpenAL Soft's included" ${PROJECT_IS_TOP_LEVEL})
 option(GDKAUDIO_OPENAL_VENDORED_OPENAL "Build OpenAL Soft from the vendored source even where the system has OpenAL" OFF)
 
-if (GDKAUDIO_OPENAL_BUILD_DOCS AND NOT GDKAUDIO_OPENAL_BUILD_TESTS AND NOT GDKAUDIO_OPENAL_BUILD_DEMO)
-    add_subdirectory(docs)
+if (GDKAUDIO_OPENAL_BUILD_DOCS)
+    jfc_generate_documentation_doxygen(
+        README_PATH      README.md
+        OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/docs
 
-    return()
+        INCLUDE_DIRECTORIES
+            include/
+    )
+
+    if (NOT GDKAUDIO_OPENAL_BUILD_TESTS AND NOT GDKAUDIO_OPENAL_BUILD_DEMO)
+        return()
+    endif()
 endif()
 
 file(GLOB_RECURSE _gdk_audio_openal_own_sources
@@ -148,8 +156,4 @@ endif()
 
 if (GDKAUDIO_OPENAL_BUILD_DEMO)
     add_subdirectory(demo)
-endif()
-
-if (GDKAUDIO_OPENAL_BUILD_DOCS)
-    add_subdirectory(docs)
 endif()
