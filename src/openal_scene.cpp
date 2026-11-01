@@ -147,38 +147,38 @@ namespace gdk::audio
             [](const auto &aHeld) { return !aHeld.expired(); }));
     }
 
-    void al_scene::set_reverb(const reverb_parameters &a)
+    void al_scene::set_reverb(const reverb_parameters &aParameters)
     {
         const auto &efx = efx_or_throw();
 
         const auto effect = ensure_effect(EFX_EFFECT_REVERB);
 
-        efx.alEffectf(effect, EFX_REVERB_DENSITY, a.density);
-        efx.alEffectf(effect, EFX_REVERB_DIFFUSION, a.diffusion);
-        efx.alEffectf(effect, EFX_REVERB_GAIN, a.gain);
-        efx.alEffectf(effect, EFX_REVERB_GAINHF, a.high_frequency_gain);
-        efx.alEffectf(effect, EFX_REVERB_DECAY_TIME, a.decay_seconds);
-        efx.alEffectf(effect, EFX_REVERB_DECAY_HFRATIO, a.decay_high_frequency_ratio);
-        efx.alEffectf(effect, EFX_REVERB_REFLECTIONS_GAIN, a.reflections_gain);
-        efx.alEffectf(effect, EFX_REVERB_REFLECTIONS_DELAY, a.reflections_delay_seconds);
-        efx.alEffectf(effect, EFX_REVERB_LATE_REVERB_GAIN, a.late_gain);
-        efx.alEffectf(effect, EFX_REVERB_LATE_REVERB_DELAY, a.late_delay_seconds);
-        efx.alEffectf(effect, EFX_REVERB_ROOM_ROLLOFF_FACTOR, a.room_rolloff_factor);
+        efx.alEffectf(effect, EFX_REVERB_DENSITY, aParameters.density);
+        efx.alEffectf(effect, EFX_REVERB_DIFFUSION, aParameters.diffusion);
+        efx.alEffectf(effect, EFX_REVERB_GAIN, aParameters.gain);
+        efx.alEffectf(effect, EFX_REVERB_GAINHF, aParameters.high_frequency_gain);
+        efx.alEffectf(effect, EFX_REVERB_DECAY_TIME, aParameters.decay_seconds);
+        efx.alEffectf(effect, EFX_REVERB_DECAY_HFRATIO, aParameters.decay_high_frequency_ratio);
+        efx.alEffectf(effect, EFX_REVERB_REFLECTIONS_GAIN, aParameters.reflections_gain);
+        efx.alEffectf(effect, EFX_REVERB_REFLECTIONS_DELAY, aParameters.reflections_delay_seconds);
+        efx.alEffectf(effect, EFX_REVERB_LATE_REVERB_GAIN, aParameters.late_gain);
+        efx.alEffectf(effect, EFX_REVERB_LATE_REVERB_DELAY, aParameters.late_delay_seconds);
+        efx.alEffectf(effect, EFX_REVERB_ROOM_ROLLOFF_FACTOR, aParameters.room_rolloff_factor);
 
         bind_effect_to_slot();
     }
 
-    void al_scene::set_echo(const echo_parameters &a)
+    void al_scene::set_echo(const echo_parameters &aParameters)
     {
         const auto &efx = efx_or_throw();
 
         const auto effect = ensure_effect(EFX_EFFECT_ECHO);
 
-        efx.alEffectf(effect, EFX_ECHO_DELAY, a.delay_seconds);
-        efx.alEffectf(effect, EFX_ECHO_LRDELAY, a.left_right_delay_seconds);
-        efx.alEffectf(effect, EFX_ECHO_DAMPING, a.damping);
-        efx.alEffectf(effect, EFX_ECHO_FEEDBACK, a.feedback);
-        efx.alEffectf(effect, EFX_ECHO_SPREAD, a.spread);
+        efx.alEffectf(effect, EFX_ECHO_DELAY, aParameters.delay_seconds);
+        efx.alEffectf(effect, EFX_ECHO_LRDELAY, aParameters.left_right_delay_seconds);
+        efx.alEffectf(effect, EFX_ECHO_DAMPING, aParameters.damping);
+        efx.alEffectf(effect, EFX_ECHO_FEEDBACK, aParameters.feedback);
+        efx.alEffectf(effect, EFX_ECHO_SPREAD, aParameters.spread);
 
         bind_effect_to_slot();
     }
