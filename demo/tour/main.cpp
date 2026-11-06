@@ -2,7 +2,6 @@
 
 #include <gdk/audio/context.h>
 #include <gdk/audio/emitter.h>
-#include <gdk/audio/ext/vorbis.h>
 #include <gdk/audio/listener.h>
 #include <gdk/audio/openal_context.h>
 #include <gdk/audio/openal_policy.h>
@@ -11,13 +10,13 @@
 
 #include <gdk/math/constants.h>
 
-#include <jfc/POL_chubby_cat_short.ogg.h>
-
 #include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <numbers>
 #include <thread>
 #include <vector>
 
@@ -27,9 +26,26 @@ namespace {
     constexpr float ORBIT_RADIUS = 6.0f;
     constexpr float FRAME_SECONDS = 1.0f / 60.0f;
     constexpr float WALK_AWAY_DISTANCE = 45.0f;
+    constexpr std::size_t TONE_SAMPLE_RATE = 44100;
+    constexpr std::size_t TONE_FRAMES = TONE_SAMPLE_RATE * 16;
+    constexpr double TONE_HERTZ = 440.0;
+    constexpr double TONE_AMPLITUDE = 8000.0;
 
     [[nodiscard]] float lerp(const float a, const float b, const float t) {
         return a + (b - a) * t;
+    }
+
+    [[nodiscard]] audio::sound_shared_ptr_type make_tone() {
+        std::vector<std::int16_t> samples(TONE_FRAMES);
+
+        for (std::size_t i = 0; i < samples.size(); ++i) {
+            const auto seconds = static_cast<double>(i) / static_cast<double>(TONE_SAMPLE_RATE);
+
+            samples[i] = static_cast<std::int16_t>(
+                TONE_AMPLITUDE * std::sin(2.0 * std::numbers::pi * TONE_HERTZ * seconds));
+        }
+
+        return audio::make_pcm_sound(samples.data(), samples.size(), 1, TONE_SAMPLE_RATE, audio::pcm_format::signed_16);
     }
 }
 
@@ -44,15 +60,10 @@ int main() {
 
     auto pScene = pAudio->make_scene();
 
-    auto pSound = audio::ext::make_vorbis_sound(std::vector<std::byte>(
-        reinterpret_cast<const std::byte *>(POL_chubby_cat_short_ogg),
-        reinterpret_cast<const std::byte *>(POL_chubby_cat_short_ogg) + sizeof(POL_chubby_cat_short_ogg)));
+    auto pSound = make_tone();
 
     std::cout << "sound: " << pSound->channel_count() << " channel, "
         << pSound->sample_rate() << " Hz, " << pSound->duration() << "s\n";
-
-    if (pSound->channel_count() != 1)
-        std::cout << "  warning: not mono, so nothing below will be heard in space\n";
 
     auto pEmitter = pScene->make_emitter(pSound);
     auto &ears = pScene->get_listener();
