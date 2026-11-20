@@ -4,7 +4,7 @@ The [gdk-audio](https://github.com/jfcameron/gdk-audio) interface, implemented o
 API documentation: https://jfcameron.github.io/gdk-audio_openal/
 
 ## Getting Started
-Install cmake 3.21 or greater, and a c++20 compatible compiler. The system's OpenAL Soft is used where it has one; otherwise the vendored OpenAL Soft is built and linked statically (`GDKAUDIO_OPENAL_VENDORED_OPENAL` forces it). On Linux, install the ALSA and PulseAudio development headers so the vendored one can reach them (on Debian and Ubuntu: `libasound2-dev libpulse-dev`).
+Install cmake 3.21 or greater, and a c++20 compatible compiler. The system's OpenAL Soft is used where it has one; otherwise the vendored OpenAL Soft is built and linked statically (`GDKAUDIO_OPENAL_VENDORED_OPENAL` forces it), or with `GDKAUDIO_OPENAL_VENDORED_SHARED` built as a shared library, for a program to ship beside it rather than in it, as OpenAL Soft is LGPL (unversioned on Android, `libopenal.so`, as an APK's native libraries have to be named). On Linux, install the ALSA and PulseAudio development headers so the vendored one can reach them (on Debian and Ubuntu: `libasound2-dev libpulse-dev`).
 ```
 # initialize the tree
 git submodule update --init --recursive

@@ -18,6 +18,7 @@ option(GDKAUDIO_OPENAL_BUILD_DEMO "Build the demos" OFF)
 option(GDKAUDIO_OPENAL_BUILD_DOCS "Build documentation" OFF)
 option(GDKAUDIO_OPENAL_INSTALL "Generate install rules, a vendored OpenAL Soft's included" ${PROJECT_IS_TOP_LEVEL})
 option(GDKAUDIO_OPENAL_VENDORED_OPENAL "Build OpenAL Soft from the vendored source even where the system has OpenAL" OFF)
+option(GDKAUDIO_OPENAL_VENDORED_SHARED "Build the vendored OpenAL Soft as a shared library, to ship beside the program rather than in it (it is LGPL)" OFF)
 
 if (GDKAUDIO_OPENAL_BUILD_DOCS)
     jfc_generate_documentation_doxygen(

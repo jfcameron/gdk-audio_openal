@@ -12,9 +12,15 @@ if (TARGET OpenAL::OpenAL)
     return()
 endif()
 
-message(STATUS "gdk-audio_openal: OpenAL Soft built from the vendored source, linked statically")
+if (GDKAUDIO_OPENAL_VENDORED_SHARED)
+    message(STATUS "gdk-audio_openal: OpenAL Soft built from the vendored source, as a shared library")
 
-set(LIBTYPE STATIC)
+    set(LIBTYPE SHARED)
+else()
+    message(STATUS "gdk-audio_openal: OpenAL Soft built from the vendored source, linked statically")
+
+    set(LIBTYPE STATIC)
+endif()
 
 set(ALSOFT_BACKEND_SNDIO OFF CACHE BOOL "" FORCE)
 set(ALSOFT_REQUIRE_SNDIO OFF CACHE BOOL "" FORCE)
@@ -40,4 +46,10 @@ else()
 endif()
 
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/OpenAL")
+
+# an app's native libraries are lib*.so, unversioned, or Android won't load them from its APK
+if (ANDROID AND GDKAUDIO_OPENAL_VENDORED_SHARED)
+    set_property(TARGET OpenAL PROPERTY VERSION)
+    set_property(TARGET OpenAL PROPERTY SOVERSION)
+endif()
 
